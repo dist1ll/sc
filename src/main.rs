@@ -4,7 +4,6 @@ use std::{
     io::{self, BufReader},
 };
 
-use chrono::Local;
 use tui::{
     backend::{Backend, CrosstermBackend},
     layout::{Constraint, Layout, Rect},
@@ -15,6 +14,7 @@ use tui::{
 };
 
 use crossterm::style::Stylize;
+use time::{self, OffsetDateTime};
 
 fn main() -> Result<(), io::Error> {
     let reader = BufReader::new(File::open("./local/calendar.ics")?);
@@ -119,15 +119,10 @@ impl Calendar {
 
 /// Returns a number representing a YYYYMMDD date
 fn today() -> usize {
-    let dt = Local::now();
-    dt.date()
-        .to_string()
-        .split('+')
-        .next()
-        .unwrap()
-        .replace("-", "")
-        .parse()
-        .expect("Parse chrono datestring to u16")
+    let d = OffsetDateTime::now_utc();
+    let m: u8 = d.month().into();
+    let y = d.year();
+    (d.day() as usize) + (m as usize * 100) + (y as usize * 10000)
 }
 
 /// Maximum number of default blocks that should be drawn, depending
