@@ -14,7 +14,7 @@ use tui::{
     Frame, Terminal, TerminalOptions, Viewport,
 };
 
-use crossterm::style::{style, Stylize};
+use crossterm::style::Stylize;
 
 fn main() -> Result<(), io::Error> {
     let reader = BufReader::new(File::open("./local/calendar.ics")?);
@@ -27,7 +27,12 @@ fn main() -> Result<(), io::Error> {
         let val = l.value.as_ref().unwrap().clone();
         if val == "VEVENT" {
             match l.name.as_str() {
-                "BEGIN" => current = Event::default(),
+                "BEGIN" => {
+                    current = Event::default();
+                    current.style = Style::default()
+                        .bg(Color::Rgb(255, 255, 255))
+                        .fg(Color::Rgb(0, 0, 0));
+                },
                 "END" => events.push(current.clone()),
                 _ => continue,
             }
@@ -73,6 +78,7 @@ pub struct Event {
     pub name: String,
     pub description: String,
     pub date: String,
+    pub style: Style,
 }
 
 impl Calendar {
@@ -178,13 +184,12 @@ fn render_view_default<T: Backend>(f: &mut Frame<T>, cal: Calendar) {
 /// Renders a default overview block, with truncated event names
 fn render_default_block<T: Backend>(f: &mut Frame<T>, pos: Rect, d: &Day) {
     let block = Block::default().borders(Borders::ALL).title(d.date.clone());
-    let ev = d.events.iter().map(|e| e.name.as_str()).collect();
-    render_vertical_paragraphs(f, block.inner(pos), ev);
+    render_vertical_paragraphs(f, block.inner(pos), d.events.iter().collect());
     f.render_widget(block, pos);
 }
 
 /// Renders a collection of single-line texts in a given Rect.
-fn render_vertical_paragraphs<T: Backend>(f: &mut Frame<T>, pos: Rect, text: Vec<&str>) {
+fn render_vertical_paragraphs<T: Backend>(f: &mut Frame<T>, pos: Rect, text: Vec<&Event>) {
     for (i, &e) in text.iter().enumerate() {
         let mut l = pos.clone();
         l.height = 1;
@@ -192,11 +197,7 @@ fn render_vertical_paragraphs<T: Backend>(f: &mut Frame<T>, pos: Rect, text: Vec
         if l.y >= pos.bottom() {
             break;
         }
-        let p = Paragraph::new(Text::from(e)).style(
-            Style::default()
-                .bg(Color::Rgb(20, 20, 200))
-                .fg(Color::Rgb(255, 255, 255)),
-        );
+        let p = Paragraph::new(Text::from(e.name.as_str())).style(e.style);
         f.render_widget(p, l);
     }
 }
