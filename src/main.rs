@@ -29,15 +29,15 @@ fn main() -> Result<(), io::Error> {
         .subcommand(
             Command::new("remove")
                 .about("Delete calendar with given ID")
-                .arg(
-                    Arg::new("id").help("ID of the shared calendar."),
-                ),
+                .arg(Arg::new("id").help("ID of the shared calendar.")),
         )
         .author("Adrian Alic <contact@alic.dev>")
         .version(clap::crate_version!())
         .about("Command-line utility for viewing shared calendars")
         .arg(clap::arg!(-t --today "Show calendar events for today"))
         .get_matches();
+
+    // println!("{:#?}", clap::Value::from_matches(&m));
 
     let reader = BufReader::new(File::open("./local/calendar.ics")?);
     let parser = ical::PropertyParser::from_reader(reader);
