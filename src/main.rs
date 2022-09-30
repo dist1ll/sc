@@ -4,6 +4,7 @@ use std::{
     io::{self, BufReader},
 };
 
+use clap::{Arg, Command};
 use tui::{
     backend::{Backend, CrosstermBackend},
     layout::{Constraint, Layout, Rect},
@@ -17,6 +18,27 @@ use crossterm::style::Stylize;
 use time::{self, OffsetDateTime};
 
 fn main() -> Result<(), io::Error> {
+    let m = Command::new("sc")
+        .subcommand(
+            Command::new("add")
+                .about("Add shared calendar by URL")
+                .arg(Arg::new("url").help("URL of the shared calendar")),
+        )
+        .subcommand(Command::new("list").about("List all calendars"))
+        .subcommand(Command::new("update").about("Updates all calendars"))
+        .subcommand(
+            Command::new("remove")
+                .about("Delete calendar with given ID")
+                .arg(
+                    Arg::new("id").help("ID of the shared calendar."),
+                ),
+        )
+        .author("Adrian Alic <contact@alic.dev>")
+        .version(clap::crate_version!())
+        .about("Command-line utility for viewing shared calendars")
+        .arg(clap::arg!(-t --today "Show calendar events for today"))
+        .get_matches();
+
     let reader = BufReader::new(File::open("./local/calendar.ics")?);
     let parser = ical::PropertyParser::from_reader(reader);
 
@@ -32,7 +54,7 @@ fn main() -> Result<(), io::Error> {
                     current.style = Style::default()
                         .bg(Color::Rgb(255, 255, 255))
                         .fg(Color::Rgb(0, 0, 0));
-                },
+                }
                 "END" => events.push(current.clone()),
                 _ => continue,
             }
