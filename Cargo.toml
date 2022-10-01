@@ -10,3 +10,4 @@ crossterm = "0.25"
 ical = "0.7.0"
 clap = { version = "4.0.6", features = ["cargo"] }
 time = "0.3.14"
+dirs = "4.0"
