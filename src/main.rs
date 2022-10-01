@@ -52,11 +52,14 @@ fn main() -> Result<(), std::io::Error> {
 
 // Handles the add command
 fn cmd_add(m: ArgMatches, cfg: &mut Config) {
-    let url = m.subcommand_matches("add")
+    let url = m
+        .subcommand_matches("add")
         .unwrap()
         .get_one::<String>("url")
         .unwrap();
-    println!("{}", url);
+    cfg.add_line(url);
+    cfg.save_config().expect("store changes to config file");
+    println!("{:?}", cfg.get_urls());
 }
 
 /// Handles the view command.

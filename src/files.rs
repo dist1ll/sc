@@ -7,16 +7,21 @@ use std::{
 
 /// Wrapper for configuration file.
 pub struct Config {
-    content: String,
+    urls: Vec<String>,
     file: File,
 }
 
 impl Config {
-    pub fn add_line() {
-        
+    pub fn get_urls(&self) -> &Vec<String> {
+        &self.urls
     }
-    pub fn save_config() {
-        
+    /// Adds a line to the configuration
+    pub fn add_line(&mut self, str: &str) {
+        self.urls.push(str.to_owned());
+    }
+    /// Stores the configuration back to disk
+    pub fn save_config(&mut self) -> Result<(), std::io::Error> {
+        self.file.write_all(self.urls.join("\n").as_bytes())
     }
 }
 
@@ -47,7 +52,14 @@ pub fn init_config() -> Config {
     };
     let mut buf = String::new();
     BufReader::new(&cfg_file).read_to_string(&mut buf).unwrap();
-    Config{ content: buf, file: cfg_file }
+    Config {
+        urls: buf
+            .split('\n')
+            .skip_while(|s| s.is_empty() )
+            .map(|s| s.to_owned())
+            .collect(),
+        file: cfg_file,
+    }
 }
 /// Creates a config file. Only call this when you know that no
 /// config file exists already.
