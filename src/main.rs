@@ -1,3 +1,5 @@
+use std::process::exit;
+
 use clap::{Arg, ArgMatches, Command};
 
 pub mod files;
@@ -38,44 +40,76 @@ fn main() -> Result<(), std::io::Error> {
         .get_matches();
 
     // check if config directory and file exists
-    match m.subcommand_name() {
+    let result = match m.subcommand_name() {
         None => cmd_view(m),
         Some("add") => cmd_add(m, &mut cfg),
-        Some("remove") => println!("Removed calendar with ID"),
+        Some("remove") => cmd_remove(m, &mut cfg),
         Some("list") => cmd_list(&mut cfg),
-        Some("update") => println!("Updating all calendars:"),
+        Some("update") => Ok(()),
         Some(_) => panic!("Unsupported command!"),
     };
 
+    match result {
+        Ok(_) => (),
+        Err(e) => {
+            eprintln!("Error: {}", e);
+            exit(1);
+        }
+    }
+    Ok(())
+}
+
+/// Handles the remove command
+fn cmd_remove(m: ArgMatches, cfg: &mut Config) -> Result<(), &'static str> {
+    let id: usize = m
+        .subcommand_matches("remove")
+        .unwrap()
+        .get_one::<String>("id")
+        .unwrap()
+        .parse()
+        .map_err(|_| "calendar ID needs to be an integer")?;
+
+    match cfg.remove_line(id) {
+        Ok(_) => (),
+        Err(e) => {
+            eprintln!("Error: {}", e);
+            exit(1);
+        }
+    }
+    cfg.save_config().map_err(|_| "couldn't write changes to config")?;
     Ok(())
 }
 
 /// Handles the list command
-fn cmd_list(cfg: &mut Config) {
+fn cmd_list(cfg: &mut Config) -> Result<(), &'static str> {
     for (idx, url) in cfg.get_urls().iter().enumerate() {
         let mut u = url.clone();
         let url_formatted = match u.len() > 50 {
-            true => { u.truncate(50); (u + "...") },
+            true => {
+                u.truncate(50);
+                u + "..."
+            }
             false => u,
         };
         println!("[{}] {}", idx, url_formatted);
     }
+    Ok(())
 }
 
 /// Handles the add command
-fn cmd_add(m: ArgMatches, cfg: &mut Config) {
+fn cmd_add(m: ArgMatches, cfg: &mut Config) -> Result<(), &'static str> {
     let url = m
         .subcommand_matches("add")
-        .unwrap()
+        .ok_or("no add command found")?
         .get_one::<String>("url")
-        .unwrap();
+        .ok_or("no url parameter given")?;
     cfg.add_line(url);
-    cfg.save_config().expect("store changes to config file");
-    println!("{:?}", cfg.get_urls());
+    cfg.save_config().map_err(|_| "couldn't write changes to config")?;
+    Ok(())
 }
 
 /// Handles the view command.
-fn cmd_view(m: ArgMatches) {
+fn cmd_view(m: ArgMatches) -> Result<(), &'static str> {
     // parse calendars
     let cal_paths = vec!["./local/calendar.ics"];
     let cals: Vec<Calendar> = cal_paths
@@ -96,4 +130,5 @@ fn cmd_view(m: ArgMatches) {
         let mut term = render_view_default(&cals[0], count);
         print_terminal(&mut term);
     }
+    Ok(())
 }

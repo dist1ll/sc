@@ -14,14 +14,24 @@ impl Config {
     pub fn get_urls(&self) -> &Vec<String> {
         &self.urls
     }
-    /// Adds a line to the configuration
+    /// Adds a url to the configuration
     pub fn add_line(&mut self, str: &str) {
         self.urls.push(str.to_owned());
     }
+    /// Removes a url from the configuration
+    pub fn remove_line(&mut self, idx: usize) -> Result<(), String> {
+        if idx >= self.urls.len() {
+            return Err(format!(
+                "ID of calendar needs to be in range [0..{}]",
+                self.urls.len()
+            ));
+        }
+        self.urls.remove(idx);
+        Ok(())
+    }
     /// Stores the configuration back to disk
     pub fn save_config(&self) -> Result<(), std::io::Error> {
-        let mut file = File::create(cfg_path().unwrap())
-            .expect("Create file in cfg directory");
+        let mut file = File::create(cfg_path().unwrap()).expect("Create file in cfg directory");
         file.write_all(self.urls.join("\n").as_bytes())
     }
 }
