@@ -16,7 +16,7 @@ use crate::model::*;
 
 /// Maximum number of default blocks that should be drawn, depending
 /// on the terminal size.
-pub fn max_default_blocks() -> u16 {
+fn max_default_blocks() -> u16 {
     crossterm::terminal::size().expect("Get terminal size").0 / 26
 }
 
@@ -54,7 +54,7 @@ pub fn render_view_default(cal: &Calendar, days: usize) -> Terminal<impl Backend
 }
 
 /// Builds terminal for default view from a given calendar.
-pub fn build_default_terminal(cal: &Calendar) -> Terminal<impl Backend> {
+fn build_default_terminal(cal: &Calendar) -> Terminal<impl Backend> {
     let stdout = std::io::stdout();
     let backend = CrosstermBackend::new(stdout);
     let ts = crossterm::terminal::size().unwrap();
@@ -107,7 +107,7 @@ pub fn print_terminal<T: Backend>(t: &mut Terminal<T>) {
     }
 }
 
-pub fn conv_color(c1: tui::style::Color) -> crossterm::style::Color {
+fn conv_color(c1: tui::style::Color) -> crossterm::style::Color {
     type Cs = crossterm::style::Color;
     match c1 {
         Color::Rgb(r, g, b) => Cs::Rgb { r, g, b },
@@ -119,7 +119,7 @@ pub fn conv_color(c1: tui::style::Color) -> crossterm::style::Color {
     }
 }
 /// Returns a number representing a YYYYMMDD date
-pub fn today() -> usize {
+fn today() -> usize {
     let d = OffsetDateTime::now_utc();
     let m: u8 = d.month().into();
     let y = d.year();
