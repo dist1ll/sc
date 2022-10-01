@@ -1,14 +1,29 @@
-use std::io;
+use std::{
+    fs::{create_dir_all, File},
+    io::{self, BufReader, Read, Write},
+};
 
 use clap::{Arg, ArgMatches, Command};
 
 pub mod model;
 use model::Calendar;
-use render::{render_view_default, print_terminal};
+use render::{print_terminal, render_view_default};
 
 pub mod render;
 
+fn cfg_dir() -> Option<String> {
+    let hd = dirs::home_dir().map(|p| Some(p.to_str()?.to_string()))??;
+    Some(format!("{}/.config/sc/", hd))
+}
+fn cfg_path() -> Option<String> {
+    let hd = dirs::home_dir().map(|p| Some(p.to_str()?.to_string()))??;
+    Some(format!("{}/.config/sc/config", hd))
+}
+
 fn main() -> Result<(), io::Error> {
+    // read config
+    let (cfg, cfg_file) = read_or_create_config();
+
     let m = Command::new("sc")
         .subcommand(
             Command::new("add")
@@ -38,12 +53,39 @@ fn main() -> Result<(), io::Error> {
         Some("remove") => println!("Removed calendar with ID"),
         Some("list") => println!("Listing all following calenders:"),
         Some("update") => println!("Updating all calendars:"),
-        Some(_) => println!("Unsupported command!"),
+        Some(_) => panic!("Unsupported command!"),
     };
 
     Ok(())
 }
 
+/// Reads the contents of the config file and returns the file handle.
+/// If no config was found, creates a new config file.
+pub fn read_or_create_config() -> (String, File) {
+    let cfg_file = match File::options()
+        .read(true)
+        .write(true)
+        .open(cfg_path().unwrap())
+    {
+        Ok(f) => f,
+        Err(_) => create_config(),
+    };
+    let mut buf = String::new();
+    BufReader::new(&cfg_file).read_to_string(&mut buf).unwrap();
+    (buf, cfg_file)
+}
+/// Creates a config file. Only call this when you know that no
+/// config file exists already.
+fn create_config() -> File {
+    println!("creating config file in ~/.config/sc");
+    create_dir_all(cfg_dir().unwrap()).expect("create .config directory for sc");
+    File::options()
+        .read(true)
+        .write(true)
+        .create(true)
+        .open(cfg_path().unwrap())
+        .expect("Create file in cfg directory")
+}
 /// Handles the view command.
 fn cmd_view(m: ArgMatches) {
     // parse calendars
