@@ -4,7 +4,7 @@ use std::{
     io::{self, BufReader},
 };
 
-use clap::{Arg, Command};
+use clap::{Arg, ArgMatches, Command};
 use tui::{
     backend::{Backend, CrosstermBackend},
     layout::{Constraint, Layout, Rect},
@@ -37,51 +37,29 @@ fn main() -> Result<(), io::Error> {
         .arg(clap::arg!(-t --today "Show calendar events for today"))
         .get_matches();
 
-    // println!("{:#?}", clap::Value::from_matches(&m));
-
-    let reader = BufReader::new(File::open("./local/calendar.ics")?);
-    let parser = ical::PropertyParser::from_reader(reader);
-
-    let mut events: Vec<Event> = vec![];
-    let mut current: Event = Event::default();
-
-    for l in parser.map(|l| l.unwrap()).skip_while(|l| l.value.is_none()) {
-        let val = l.value.as_ref().unwrap().clone();
-        if val == "VEVENT" {
-            match l.name.as_str() {
-                "BEGIN" => {
-                    current = Event::default();
-                    current.style = Style::default()
-                        .bg(Color::Rgb(255, 255, 255))
-                        .fg(Color::Rgb(0, 0, 0));
-                }
-                "END" => events.push(current.clone()),
-                _ => continue,
-            }
-        }
-        match l.name.as_str() {
-            "SUMMARY" => current.name = val,
-            "DESCRIPTION" => current.description = val,
-            "DTSTART" => {
-                let mut time_iter = val.split('T');
-                current.date = time_iter
-                    .next()
-                    .expect("DTSTART time string separated by T")
-                    .to_string();
-            }
-            _ => continue,
-        };
-    }
-
-    let c = Calendar::from_events(events.into_iter());
-
-    let mut terminal = build_default_terminal(&c);
-    let mut frame = terminal.get_frame();
-
-    render_view_default(&mut frame, c);
-    print_terminal(&mut terminal);
+    // check if config directory and file exists
+    match m.subcommand_name() {
+        None => cmd_view(),
+        Some("add") => println!("Added URL to calendar"),
+        Some("remove") => println!("Removed calendar with ID"),
+        Some("list") => println!("Listing all following calenders:"),
+        Some("update") => println!("Updating all calendars:"),
+        Some(_) => println!("Unsupported command!"),
+    };
 
     Ok(())
+}
+
+/// Handles the view command.
+fn cmd_view() {
+    let cal_paths = vec!["./local/calendar.ics"];
+    let cals: Vec<Calendar> = cal_paths
+        .iter()
+        .map(|path| Calendar::from_path(path))
+        .collect::<Result<_, _>>()
+        .unwrap();
+    let mut term = render_view_default(&cals[0]);
+    print_terminal(&mut term);
 }
 
 #[derive(Default, Debug)]
@@ -105,7 +83,7 @@ pub struct Event {
 
 impl Calendar {
     ///  Creates a calendar from an iterator of events  
-    fn from_events<T: Iterator<Item = Event>>(events: T) -> Self {
+    fn from_events<'a, T: Iterator<Item = &'a Event>>(events: T) -> Self {
         let mut cal = Calendar::default();
         for e in events {
             match cal.days.get_mut(&e.date) {
@@ -113,17 +91,60 @@ impl Calendar {
                     let mut d = Day::default();
                     d.date = e.date.clone();
                     d.events.push(e.clone());
-                    cal.days.insert(e.date, d);
+                    cal.days.insert(e.date.clone(), d);
                 }
                 Some(day) => day.events.push(e.clone()),
             };
         }
         cal
     }
+    /// Sets the style of all events in a calendar.
+    fn set_event_style(&mut self, style: Style) {
+        self.days
+            .values_mut()
+            .flat_map(|d| -> &mut Vec<Event> { d.events.as_mut() })
+            .for_each(|e| e.style = style);
+    }
+    /// Reads a calendar from a given file path, and creates a
+    /// calendar object.
+    pub fn from_path(path: &str) -> Result<Self, io::Error> {
+        let reader = BufReader::new(File::open(path)?);
+        let parser = ical::PropertyParser::from_reader(reader);
 
+        let mut events: Vec<Event> = vec![];
+        let mut current: Event = Event::default();
+        for l in parser.map(|l| l.unwrap()).skip_while(|l| l.value.is_none()) {
+            let val = l.value.as_ref().unwrap().clone();
+            if val == "VEVENT" {
+                match l.name.as_str() {
+                    "BEGIN" => {
+                        current = Event::default();
+                        current.style = Style::default()
+                            .bg(Color::Rgb(255, 255, 255))
+                            .fg(Color::Rgb(0, 0, 0));
+                    }
+                    "END" => events.push(current.clone()),
+                    _ => continue,
+                }
+            }
+            match l.name.as_str() {
+                "SUMMARY" => current.name = val,
+                "DESCRIPTION" => current.description = val,
+                "DTSTART" => {
+                    let mut time_iter = val.split('T');
+                    current.date = time_iter
+                        .next()
+                        .expect("DTSTART time string separated by T")
+                        .to_string();
+                }
+                _ => continue,
+            };
+        }
+        Ok(Self::from_events(events.iter()))
+    }
     /// Get the max height, starting from a given date, up til
     /// a given number of days.
-    fn max_height(&self, from: usize, number: usize) -> u16 {
+    pub fn max_height(&self, from: usize, number: usize) -> u16 {
         assert!(number > 0);
         let mut max = 0u16;
         for i in 0..number {
@@ -140,7 +161,7 @@ impl Calendar {
 }
 
 /// Returns a number representing a YYYYMMDD date
-fn today() -> usize {
+pub fn today() -> usize {
     let d = OffsetDateTime::now_utc();
     let m: u8 = d.month().into();
     let y = d.year();
@@ -149,12 +170,38 @@ fn today() -> usize {
 
 /// Maximum number of default blocks that should be drawn, depending
 /// on the terminal size.
-fn max_default_blocks() -> u16 {
+pub fn max_default_blocks() -> u16 {
     crossterm::terminal::size().expect("Get terminal size").0 / 26
 }
 
+/// Returns a terminal, on which the default view has been rendered. 
+pub fn render_view_default(cal: &Calendar) -> Terminal<impl Backend> {
+    let mut term = build_default_terminal(&cal);
+    let mut f = term.get_frame();
+    let max = max_default_blocks() as usize;
+    let chunks = Layout::default()
+        .direction(tui::layout::Direction::Horizontal)
+        .margin(1)
+        .constraints(vec![Constraint::Ratio(1, max as u32); max])
+        .split(f.size());
+
+    let start_date = today();
+    for i in 0..max {
+        let date = (start_date + i).to_string();
+        match cal.days.get(&date) {
+            None => {
+                let mut day = Day::default();
+                day.date = date;
+                render_default_block(&mut f, chunks[i], &day);
+            }
+            Some(day) => render_default_block(&mut f, chunks[i], day),
+        };
+    }
+    term
+}
+
 /// Builds terminal for default view from a given calendar.
-fn build_default_terminal(cal: &Calendar) -> Terminal<impl Backend> {
+pub fn build_default_terminal(cal: &Calendar) -> Terminal<impl Backend> {
     let stdout = io::stdout();
     let backend = CrosstermBackend::new(stdout);
     let ts = crossterm::terminal::size().unwrap();
@@ -174,30 +221,6 @@ fn build_default_terminal(cal: &Calendar) -> Terminal<impl Backend> {
     )
     .unwrap()
 }
-
-/// Renders the short event overview, with one block per day.
-fn render_view_default<T: Backend>(f: &mut Frame<T>, cal: Calendar) {
-    let max = max_default_blocks() as usize;
-    let chunks = Layout::default()
-        .direction(tui::layout::Direction::Horizontal)
-        .margin(1)
-        .constraints(vec![Constraint::Ratio(1, max as u32); max])
-        .split(f.size());
-
-    let start_date = today();
-    for i in 0..max {
-        let date = (start_date + i).to_string();
-        match cal.days.get(&date) {
-            None => {
-                let mut day = Day::default();
-                day.date = date;
-                render_default_block(f, chunks[i], &day);
-            }
-            Some(day) => render_default_block(f, chunks[i], day),
-        };
-    }
-}
-
 /// Renders a default overview block, with truncated event names
 fn render_default_block<T: Backend>(f: &mut Frame<T>, pos: Rect, d: &Day) {
     let block = Block::default().borders(Borders::ALL).title(d.date.clone());
@@ -219,7 +242,7 @@ fn render_vertical_paragraphs<T: Backend>(f: &mut Frame<T>, pos: Rect, text: Vec
     }
 }
 
-fn print_terminal<T: Backend>(t: &mut Terminal<T>) {
+pub fn print_terminal<T: Backend>(t: &mut Terminal<T>) {
     let buffer = t.current_buffer_mut();
     for (_, val) in buffer.content.iter().enumerate() {
         let styled = val
@@ -231,7 +254,7 @@ fn print_terminal<T: Backend>(t: &mut Terminal<T>) {
     }
 }
 
-fn conv_color(c1: tui::style::Color) -> crossterm::style::Color {
+pub fn conv_color(c1: tui::style::Color) -> crossterm::style::Color {
     type Cs = crossterm::style::Color;
     match c1 {
         Color::Rgb(r, g, b) => Cs::Rgb { r, g, b },
