@@ -34,12 +34,15 @@ fn main() -> Result<(), io::Error> {
         .author("Adrian Alic <contact@alic.dev>")
         .version(clap::crate_version!())
         .about("Command-line utility for viewing shared calendars")
-        .arg(clap::arg!(-t --today "Show calendar events for today"))
+        .arg(clap::arg!(-d --days <days> "Display events for the next n days"))
+        .arg(clap::arg!(-t --today "Display all events for today in detail"))
+        .args_conflicts_with_subcommands(true)
+        .disable_help_subcommand(true)
         .get_matches();
 
     // check if config directory and file exists
     match m.subcommand_name() {
-        None => cmd_view(),
+        None => cmd_view(m),
         Some("add") => println!("Added URL to calendar"),
         Some("remove") => println!("Removed calendar with ID"),
         Some("list") => println!("Listing all following calenders:"),
@@ -51,15 +54,25 @@ fn main() -> Result<(), io::Error> {
 }
 
 /// Handles the view command.
-fn cmd_view() {
+fn cmd_view(m: ArgMatches) {
+    // parse calendars
     let cal_paths = vec!["./local/calendar.ics"];
     let cals: Vec<Calendar> = cal_paths
         .iter()
         .map(|path| Calendar::from_path(path))
         .collect::<Result<_, _>>()
         .unwrap();
-    let mut term = render_view_default(&cals[0]);
-    print_terminal(&mut term);
+    // display calendars
+    if m.get_flag("today") {
+        println!("TODO: Display detailed today-view. ");
+    } else {
+        let count = match m.get_one::<String>("days") {
+            None => 0usize,
+            Some(x) => x.parse::<usize>().expect("<days> should be an integer."),
+        };
+        let mut term = render_view_default(&cals[0], count);
+        print_terminal(&mut term);
+    }
 }
 
 #[derive(Default, Debug)]
@@ -174,15 +187,18 @@ pub fn max_default_blocks() -> u16 {
     crossterm::terminal::size().expect("Get terminal size").0 / 26
 }
 
-/// Returns a terminal, on which the default view has been rendered. 
-pub fn render_view_default(cal: &Calendar) -> Terminal<impl Backend> {
+/// Returns a terminal, on which the default view has been rendered.
+/// `days` is the number of days that should be rendered. If `days`
+/// is zero, the day count will be determined automatically from the
+/// size of the terminal. 
+pub fn render_view_default(cal: &Calendar, days: usize) -> Terminal<impl Backend> {
     let mut term = build_default_terminal(&cal);
     let mut f = term.get_frame();
-    let max = max_default_blocks() as usize;
+    let max = if days == 0 { max_default_blocks() as usize } else { days };
     let chunks = Layout::default()
         .direction(tui::layout::Direction::Horizontal)
         .margin(1)
-        .constraints(vec![Constraint::Ratio(1, max as u32); max])
+        .constraints(vec![Constraint::Ratio(1, max as u32); max as usize])
         .split(f.size());
 
     let start_date = today();
