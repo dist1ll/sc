@@ -5,6 +5,21 @@ use std::{
     io::{BufReader, Read, Write},
 };
 
+/// Wrapper for configuration file.
+pub struct Config {
+    content: String,
+    file: File,
+}
+
+impl Config {
+    pub fn add_line() {
+        
+    }
+    pub fn save_config() {
+        
+    }
+}
+
 fn cache_dir() -> Option<String> {
     let hd = dirs::home_dir().map(|p| Some(p.to_str()?.to_string()))??;
     Some(format!("{}/.cache/sc/", hd))
@@ -21,7 +36,7 @@ fn cfg_path() -> Option<String> {
 
 /// Reads the contents of the config file and returns the file handle.
 /// If no config was found, creates a new config file.
-pub fn init_config() -> (String, File) {
+pub fn init_config() -> Config {
     let cfg_file = match File::options()
         .read(true)
         .write(true)
@@ -32,7 +47,7 @@ pub fn init_config() -> (String, File) {
     };
     let mut buf = String::new();
     BufReader::new(&cfg_file).read_to_string(&mut buf).unwrap();
-    (buf, cfg_file)
+    Config{ content: buf, file: cfg_file }
 }
 /// Creates a config file. Only call this when you know that no
 /// config file exists already.

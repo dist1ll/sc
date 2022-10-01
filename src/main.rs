@@ -1,11 +1,9 @@
-use std::fs::File;
-
 use clap::{Arg, ArgMatches, Command};
 
 pub mod files;
 
 pub mod model;
-use files::init_config;
+use files::{init_config, Config};
 use model::Calendar;
 use render::{print_terminal, render_view_default};
 
@@ -13,20 +11,22 @@ pub mod render;
 
 fn main() -> Result<(), std::io::Error> {
     // read config
-    let (cfg, cfg_file) = init_config();
+    let mut cfg = init_config();
 
     let m = Command::new("sc")
         .subcommand(
             Command::new("add")
                 .about("Add shared calendar by URL")
-                .arg(Arg::new("url").help("URL of the shared calendar")),
+                .arg(Arg::new("url").help("URL of the shared calendar"))
+                .arg_required_else_help(true),
         )
         .subcommand(Command::new("list").about("List all calendars"))
         .subcommand(Command::new("update").about("Updates all calendars"))
         .subcommand(
             Command::new("remove")
                 .about("Delete calendar with given ID")
-                .arg(Arg::new("id").help("ID of the shared calendar.")),
+                .arg(Arg::new("id").help("ID of the shared calendar."))
+                .arg_required_else_help(true),
         )
         .author("Adrian Alic <contact@alic.dev>")
         .version(clap::crate_version!())
@@ -40,7 +40,7 @@ fn main() -> Result<(), std::io::Error> {
     // check if config directory and file exists
     match m.subcommand_name() {
         None => cmd_view(m),
-        Some("add") => cmd_add(m, cfg, cfg_file),
+        Some("add") => cmd_add(m, &mut cfg),
         Some("remove") => println!("Removed calendar with ID"),
         Some("list") => println!("Listing all following calenders:"),
         Some("update") => println!("Updating all calendars:"),
@@ -51,7 +51,13 @@ fn main() -> Result<(), std::io::Error> {
 }
 
 // Handles the add command
-fn cmd_add(_m: ArgMatches, _cfg: String, _cfg_file: File) {}
+fn cmd_add(m: ArgMatches, cfg: &mut Config) {
+    let url = m.subcommand_matches("add")
+        .unwrap()
+        .get_one::<String>("url")
+        .unwrap();
+    println!("{}", url);
+}
 
 /// Handles the view command.
 fn cmd_view(m: ArgMatches) {
