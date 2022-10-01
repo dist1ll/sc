@@ -23,7 +23,7 @@ impl Config {
         if idx >= self.urls.len() {
             return Err(format!(
                 "ID of calendar needs to be in range [0..{}]",
-                self.urls.len()
+                self.urls.len() - 1
             ));
         }
         self.urls.remove(idx);
