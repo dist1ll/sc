@@ -1,28 +1,19 @@
-use std::{
-    fs::{create_dir_all, File},
-    io::{self, BufReader, Read, Write},
-};
+use std::fs::File;
 
 use clap::{Arg, ArgMatches, Command};
 
+pub mod files;
+
 pub mod model;
+use files::init_config;
 use model::Calendar;
 use render::{print_terminal, render_view_default};
 
 pub mod render;
 
-fn cfg_dir() -> Option<String> {
-    let hd = dirs::home_dir().map(|p| Some(p.to_str()?.to_string()))??;
-    Some(format!("{}/.config/sc/", hd))
-}
-fn cfg_path() -> Option<String> {
-    let hd = dirs::home_dir().map(|p| Some(p.to_str()?.to_string()))??;
-    Some(format!("{}/.config/sc/config", hd))
-}
-
-fn main() -> Result<(), io::Error> {
+fn main() -> Result<(), std::io::Error> {
     // read config
-    let (cfg, cfg_file) = read_or_create_config();
+    let (cfg, cfg_file) = init_config();
 
     let m = Command::new("sc")
         .subcommand(
@@ -49,7 +40,7 @@ fn main() -> Result<(), io::Error> {
     // check if config directory and file exists
     match m.subcommand_name() {
         None => cmd_view(m),
-        Some("add") => println!("Added URL to calendar"),
+        Some("add") => cmd_add(m, cfg, cfg_file),
         Some("remove") => println!("Removed calendar with ID"),
         Some("list") => println!("Listing all following calenders:"),
         Some("update") => println!("Updating all calendars:"),
@@ -59,33 +50,9 @@ fn main() -> Result<(), io::Error> {
     Ok(())
 }
 
-/// Reads the contents of the config file and returns the file handle.
-/// If no config was found, creates a new config file.
-pub fn read_or_create_config() -> (String, File) {
-    let cfg_file = match File::options()
-        .read(true)
-        .write(true)
-        .open(cfg_path().unwrap())
-    {
-        Ok(f) => f,
-        Err(_) => create_config(),
-    };
-    let mut buf = String::new();
-    BufReader::new(&cfg_file).read_to_string(&mut buf).unwrap();
-    (buf, cfg_file)
-}
-/// Creates a config file. Only call this when you know that no
-/// config file exists already.
-fn create_config() -> File {
-    println!("creating config file in ~/.config/sc");
-    create_dir_all(cfg_dir().unwrap()).expect("create .config directory for sc");
-    File::options()
-        .read(true)
-        .write(true)
-        .create(true)
-        .open(cfg_path().unwrap())
-        .expect("Create file in cfg directory")
-}
+// Handles the add command
+fn cmd_add(_m: ArgMatches, _cfg: String, _cfg_file: File) {}
+
 /// Handles the view command.
 fn cmd_view(m: ArgMatches) {
     // parse calendars
