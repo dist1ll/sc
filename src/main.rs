@@ -42,7 +42,7 @@ fn main() -> Result<(), std::io::Error> {
         None => cmd_view(m),
         Some("add") => cmd_add(m, &mut cfg),
         Some("remove") => println!("Removed calendar with ID"),
-        Some("list") => println!("Listing all following calenders:"),
+        Some("list") => cmd_list(&mut cfg),
         Some("update") => println!("Updating all calendars:"),
         Some(_) => panic!("Unsupported command!"),
     };
@@ -50,7 +50,19 @@ fn main() -> Result<(), std::io::Error> {
     Ok(())
 }
 
-// Handles the add command
+/// Handles the list command
+fn cmd_list(cfg: &mut Config) {
+    for (idx, url) in cfg.get_urls().iter().enumerate() {
+        let mut u = url.clone();
+        let url_formatted = match u.len() > 50 {
+            true => { u.truncate(50); (u + "...") },
+            false => u,
+        };
+        println!("[{}] {}", idx, url_formatted);
+    }
+}
+
+/// Handles the add command
 fn cmd_add(m: ArgMatches, cfg: &mut Config) {
     let url = m
         .subcommand_matches("add")

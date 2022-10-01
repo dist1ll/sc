@@ -8,7 +8,6 @@ use std::{
 /// Wrapper for configuration file.
 pub struct Config {
     urls: Vec<String>,
-    file: File,
 }
 
 impl Config {
@@ -20,8 +19,10 @@ impl Config {
         self.urls.push(str.to_owned());
     }
     /// Stores the configuration back to disk
-    pub fn save_config(&mut self) -> Result<(), std::io::Error> {
-        self.file.write_all(self.urls.join("\n").as_bytes())
+    pub fn save_config(&self) -> Result<(), std::io::Error> {
+        let mut file = File::create(cfg_path().unwrap())
+            .expect("Create file in cfg directory");
+        file.write_all(self.urls.join("\n").as_bytes())
     }
 }
 
@@ -55,10 +56,9 @@ pub fn init_config() -> Config {
     Config {
         urls: buf
             .split('\n')
-            .skip_while(|s| s.is_empty() )
+            .skip_while(|s| s.is_empty())
             .map(|s| s.to_owned())
             .collect(),
-        file: cfg_file,
     }
 }
 /// Creates a config file. Only call this when you know that no
