@@ -57,7 +57,10 @@ impl Calendar {
 
         let mut events: Vec<Event> = vec![];
         let mut current: Event = Event::default();
-        for l in parser.map(|l| l.unwrap()).skip_while(|l| l.value.is_none()) {
+        for l in parser
+            .map(|l| l.expect("iCal compliant file"))
+            .skip_while(|l| l.value.is_none())
+        {
             let val = l.value.as_ref().unwrap().clone();
             if val == "VEVENT" {
                 match l.name.as_str() {
