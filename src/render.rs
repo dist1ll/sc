@@ -41,14 +41,16 @@ pub fn render_view_default(cal: &Vec<Calendar>, days: usize) -> Terminal<impl Ba
     let start_date = today();
     for i in 0..max {
         let date = (start_date + i).to_string();
-        match cal[0].days.get(&date) {
-            None => {
-                let mut day = Day::default();
-                day.date = date;
-                render_default_block(&mut f, chunks[i], &day);
+        let empty: Vec<Event> = Vec::default();
+        let mut day = Day::default();
+        day.events = cal.iter().map(|c| c.days.get(&date)).map(|r| {
+            match r {
+                None => &empty,
+                Some(day) => &day.events,
             }
-            Some(day) => render_default_block(&mut f, chunks[i], day),
-        };
+        }).flatten().cloned().collect::<Vec<Event>>();
+        day.date = date;
+        render_default_block(&mut f, chunks[i], &day);
     }
     term
 }
