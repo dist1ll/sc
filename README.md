@@ -3,6 +3,12 @@
 This software lets you view your shared calendars
 directly in the terminal. 
 
+Currently supported: 
+
+- [x] Proton Calendar
+- [ ] Microsoft Outlook
+- [ ] Google Calendar
+
 ```
 [usr@pc]$ sc --help
 
@@ -24,3 +30,8 @@ Options:
   -h, --help      Print help information
   -V, --version   Print version information
 ```
+
+#### Known Issues
+
+For some reason, the .ics shared calendar endpoint of Proton
+serves stale data. Repeated calling of `sc update` doesn't help. 
