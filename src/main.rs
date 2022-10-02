@@ -1,11 +1,11 @@
-use std::{process::exit, thread::sleep, time::Duration};
+use std::process::exit;
 
 use clap::{Arg, ArgMatches, Command};
 
 pub mod files;
 
 pub mod model;
-use files::{init_config, Config};
+use files::{init_config, Config, clean_cache};
 use model::Calendar;
 use render::{print_terminal, render_view_default};
 use spinners::{Spinner, Spinners};
@@ -33,10 +33,11 @@ fn main() -> Result<(), std::io::Error> {
                 .arg(Arg::new("id").help("ID of the shared calendar."))
                 .arg_required_else_help(true),
         )
+        .subcommand(Command::new("clean").about("Clean local cache"))
         .author("Adrian Alic <contact@alic.dev>")
         .version(clap::crate_version!())
         .about("Command-line utility for viewing shared calendars")
-        .arg(clap::arg!(-d --days <days> "Display events for the next n days"))
+        .arg(clap::arg!(-d --days <n> "Display events for the next n days"))
         .arg(clap::arg!(-t --today "Display all events for today in detail"))
         .args_conflicts_with_subcommands(true)
         .disable_help_subcommand(true)
@@ -49,6 +50,7 @@ fn main() -> Result<(), std::io::Error> {
         Some("remove") => cmd_remove(m, &mut cfg),
         Some("list") => cmd_list(&mut cfg),
         Some("update") => cmd_update(&mut cfg),
+        Some("clean") => cmd_clean(),
         Some(_) => panic!("Unsupported command!"),
     };
 
@@ -127,6 +129,14 @@ fn cmd_add(m: ArgMatches, cfg: &mut Config) -> Result<(), &'static str> {
     cfg.save_config()
         .map_err(|_| "couldn't write changes to config")?;
     Ok(())
+}
+
+/// Handles the clean command
+fn cmd_clean() -> Result<(), &'static str> {
+    match clean_cache() {
+        Ok(_) => Ok(()),
+        Err(_) => Err("couldn't delete cache directory")
+    }
 }
 
 /// Handles the view command.

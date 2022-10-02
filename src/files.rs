@@ -1,7 +1,7 @@
 //! Functions for creating directories and storing files
 
 use std::{
-    fs::{create_dir_all, File},
+    fs::{create_dir_all, File, remove_dir_all},
     io::{BufReader, Read, Write, Error}, collections::hash_map::DefaultHasher, hash::Hasher,
 };
 
@@ -92,5 +92,10 @@ pub fn store_calendar(content: String, url: String) -> Result<(), Error> {
     let path = format!("{}{}.ical", cd, fxhash::hash32(&url));
     let mut f = File::create(path)?;
     f.write_all(&content.as_bytes())?;
+    Ok(())
+}
+/// Removes entire local calendar cache directory.
+pub fn clean_cache() -> Result<(), Error> {
+    remove_dir_all(cache_dir().unwrap())?;
     Ok(())
 }
