@@ -1,13 +1,26 @@
 # `sc` - Shared Calendar Viewer
 
 This software lets you view your shared calendars
-directly in the terminal. 
+directly in the terminal. To use, create a shared calendar link
+(.ics) for one of the supported platforms, and do the following:
 
-Currently supported: 
+
+1. `sc add "<url>"` adds the URL to the list of calendars
+
+2. `sc list` shows the list of added calendars. 
+
+3. `sc update` fetches the remote calendar content
+
+4. After successfull update, `sc` will print upcoming events. 
+
+
+#### Supported Calendars 
 
 - [x] Proton Calendar
 - [ ] Microsoft Outlook
 - [ ] Google Calendar
+
+#### Usage
 
 ```
 [usr@pc]$ sc --help
