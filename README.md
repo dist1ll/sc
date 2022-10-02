@@ -44,7 +44,11 @@ Options:
   -V, --version   Print version information
 ```
 
-#### Known Issues
+#### Limitations
 
-For some reason, the .ics shared calendar endpoint of Proton
-serves stale data. Repeated calling of `sc update` doesn't help. 
+Note that shared calendar endpoints may server stale data. 
+[From Proton docs:](https://proton.me/support/share-calendar)
+
+> When you update your calendar, anyone with access to your 
+calendar will see the updates you make to it. It may take up 
+to eight hours before they see the changes. 
