@@ -1,4 +1,4 @@
-use std::process::exit;
+use std::{process::exit, thread::sleep, time::Duration};
 
 use clap::{Arg, ArgMatches, Command};
 
@@ -8,6 +8,7 @@ pub mod model;
 use files::{init_config, Config};
 use model::Calendar;
 use render::{print_terminal, render_view_default};
+use spinners::{Spinner, Spinners};
 
 pub mod render;
 
@@ -45,7 +46,7 @@ fn main() -> Result<(), std::io::Error> {
         Some("add") => cmd_add(m, &mut cfg),
         Some("remove") => cmd_remove(m, &mut cfg),
         Some("list") => cmd_list(&mut cfg),
-        Some("update") => Ok(()),
+        Some("update") => cmd_update(&mut cfg),
         Some(_) => panic!("Unsupported command!"),
     };
 
@@ -56,6 +57,14 @@ fn main() -> Result<(), std::io::Error> {
             exit(1);
         }
     }
+    Ok(())
+}
+
+fn cmd_update(cfg: &mut Config) -> Result<(), &'static str> {
+    let mut sp = Spinner::new(Spinners::Dots9, "Updating calendars".into());
+    sleep(Duration::from_secs(3));
+    sp.stop();
+    println!("...DONE");
     Ok(())
 }
 
@@ -76,7 +85,8 @@ fn cmd_remove(m: ArgMatches, cfg: &mut Config) -> Result<(), &'static str> {
             exit(1);
         }
     }
-    cfg.save_config().map_err(|_| "couldn't write changes to config")?;
+    cfg.save_config()
+        .map_err(|_| "couldn't write changes to config")?;
     Ok(())
 }
 
@@ -104,7 +114,8 @@ fn cmd_add(m: ArgMatches, cfg: &mut Config) -> Result<(), &'static str> {
         .get_one::<String>("url")
         .ok_or("no url parameter given")?;
     cfg.add_line(url);
-    cfg.save_config().map_err(|_| "couldn't write changes to config")?;
+    cfg.save_config()
+        .map_err(|_| "couldn't write changes to config")?;
     Ok(())
 }
 
