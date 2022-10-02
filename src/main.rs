@@ -73,10 +73,10 @@ fn cmd_update(cfg: &mut Config) -> Result<(), &'static str> {
             .unwrap()
             .into_string()
             .unwrap();
-        sp.stop();
-        println!("...DONE");
         store_calendar(body, url.as_str()).map_err(|_| "couldn't write to calendar file")?;
     }
+    sp.stop();
+    println!("...DONE");
     Ok(())
 }
 
@@ -141,21 +141,27 @@ fn cmd_clean() -> Result<(), &'static str> {
 
 /// Handles the view command.
 fn cmd_view(m: ArgMatches, cfg: &mut Config) -> Result<(), &'static str> {
-    if cfg.get_urls().len() == 0  {
+    if cfg.get_urls().len() == 0 {
         return Err("no shared calendar added. Run `sc add <url>`.");
     }
     // parse calendars
-    let fetch: Result<Vec<Calendar>, std::io::Error> = cfg
+    let cals: Vec<Calendar> = cfg
         .get_urls()
         .iter()
         .map(|url| cache_path(&url))
         .map(|path| Calendar::from_path(&path.as_str()))
-        .collect::<Result<_, _>>();
+        .map(|c| {
+            if c.is_err() {
+                Calendar::default()
+            } else {
+                c.unwrap()
+            }
+        })
+        .collect();
 
-    let cals = match fetch {
-        Ok(cals) => cals,
-        Err(_) => return Err("no calendar found. Run `sc update`."),
-    };
+    if cals.len() == 0 {
+        return Err("no calendar found. Run `sc update`.");
+    }
     //  display today view
     if m.get_flag("today") {
         println!("TODO: Display detailed today-view. ");
