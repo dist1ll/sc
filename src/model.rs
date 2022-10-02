@@ -42,8 +42,10 @@ impl Calendar {
         }
         cal
     }
-    /// Sets the style of all events in a calendar.
-    fn set_event_style(&mut self, style: Style) {
+    /// Sets the style of all events in a calendar. Use an index
+    /// between [0..4], after that, the default Style applies.
+    pub fn set_event_style(&mut self, index: usize) {
+        let style = get_style_from_idx(index);
         self.days
             .values_mut()
             .flat_map(|d| -> &mut Vec<Event> { d.events.as_mut() })
@@ -104,6 +106,27 @@ impl Calendar {
             };
         }
         max
+    }
+}
+
+fn get_style_from_idx(index: usize) -> Style {
+    match index {
+        0 => Style::default()
+            .bg(Color::Rgb(50, 50, 215))
+            .fg(Color::White),
+        1 => Style::default()
+            .bg(Color::Rgb(190, 50, 50))
+            .fg(Color::White),
+        2 => Style::default()
+            .bg(Color::Rgb(200, 110, 20))
+            .fg(Color::White),
+        3 => Style::default()
+            .bg(Color::Rgb(150, 10, 200))
+            .fg(Color::White),
+        4 => Style::default()
+            .bg(Color::Rgb(30, 175, 50))
+            .fg(Color::White),
+        _ => Style::default().bg(Color::White).fg(Color::Black),
     }
 }
 

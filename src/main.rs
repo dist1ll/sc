@@ -145,13 +145,18 @@ fn cmd_view(m: ArgMatches, cfg: &mut Config) -> Result<(), &'static str> {
         return Err("no shared calendar added. Run `sc add <url>`.");
     }
     // parse calendars
-    let cals: Vec<Calendar> = cfg
+    let mut cals: Vec<Calendar> = cfg
         .get_urls()
         .iter()
         .map(|url| cache_path(&url))
         .map(|path| Calendar::from_path(&path.as_str()))
         .map(|c| c.unwrap_or_default())
         .collect();
+
+    // set color of calendars
+    cals.iter_mut()
+        .enumerate()
+        .for_each(|(idx, c)| c.set_event_style(idx));
 
     if cals.len() == 0 {
         return Err("no calendar found. Run `sc update`.");
