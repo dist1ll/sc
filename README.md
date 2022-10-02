@@ -3,22 +3,6 @@
 This software lets you view your shared calendars
 directly in the terminal. 
 
-#### Output
-
-```
-[usr@pc]$ sc -d 3
-
- ┌2022-10-02────────┐┌2022-10-03────────┐ ┌2022-10-04─────────┐ 
- │Find Nemo         ││Nemo Meeting      │ │Meeting with XYZ   │
- │Briefing          ││Agile Coach (skip)│ │Finish Nemo Report │
- │Weekly Meeting    ││                  │ │Order Laptop       │
- │Dentist Appoint.  ││                  │ │                   │
- │Sync with XYZ     ││                  │ │                   │
- └──────────────────┘└──────────────────┘ └───────────────────┘
-```
-
-#### Usage 
-
 ```
 [usr@pc]$ sc --help
 
