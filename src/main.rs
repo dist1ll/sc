@@ -150,13 +150,7 @@ fn cmd_view(m: ArgMatches, cfg: &mut Config) -> Result<(), &'static str> {
         .iter()
         .map(|url| cache_path(&url))
         .map(|path| Calendar::from_path(&path.as_str()))
-        .map(|c| {
-            if c.is_err() {
-                Calendar::default()
-            } else {
-                c.unwrap()
-            }
-        })
+        .map(|c| c.unwrap_or_default())
         .collect();
 
     if cals.len() == 0 {
