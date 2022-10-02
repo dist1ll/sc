@@ -10,6 +10,8 @@ use model::Calendar;
 use render::{print_terminal, render_view_default};
 use spinners::{Spinner, Spinners};
 
+use crate::files::store_calendar;
+
 pub mod render;
 
 fn main() -> Result<(), std::io::Error> {
@@ -60,11 +62,19 @@ fn main() -> Result<(), std::io::Error> {
     Ok(())
 }
 
+/// Handles the update command
 fn cmd_update(cfg: &mut Config) -> Result<(), &'static str> {
     let mut sp = Spinner::new(Spinners::Dots9, "Updating calendars".into());
-    sleep(Duration::from_secs(3));
-    sp.stop();
-    println!("...DONE");
+    for url in cfg.get_urls().iter() {
+        let body = ureq::get(url.as_str())
+            .call()
+            .unwrap()
+            .into_string()
+            .unwrap();
+        sp.stop();
+        println!("...DONE");
+        store_calendar(body, url.clone()).map_err(|_| "couldn't write to calendar file")?;
+    }
     Ok(())
 }
 

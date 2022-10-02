@@ -8,6 +8,8 @@ edition = "2021"
 tui = "0.19.0"
 crossterm = "0.25"
 ical = "0.7.0"
+ureq = "2.5.0"
+fxhash = "0.2.1"
 clap = { version = "4.0.6", features = ["cargo"] }
 time = "0.3.14"
 dirs = "4.0"

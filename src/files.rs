@@ -2,8 +2,10 @@
 
 use std::{
     fs::{create_dir_all, File},
-    io::{BufReader, Read, Write},
+    io::{BufReader, Read, Write, Error}, collections::hash_map::DefaultHasher, hash::Hasher,
 };
+
+use std::hash::Hash;
 
 /// Wrapper for configuration file.
 pub struct Config {
@@ -81,4 +83,14 @@ fn create_config() -> File {
         .create(true)
         .open(cfg_path().unwrap())
         .expect("Create file in cfg directory")
+}
+/// Saves calendar to the local cache directory. The url of the
+/// calendar is used to derive the file name.  
+pub fn store_calendar(content: String, url: String) -> Result<(), Error> {
+    let cd = cache_dir().unwrap();
+    create_dir_all(&cd).expect("create .cache directory for sc");
+    let path = format!("{}{}.ical", cd, fxhash::hash32(&url));
+    let mut f = File::create(path)?;
+    f.write_all(&content.as_bytes())?;
+    Ok(())
 }
