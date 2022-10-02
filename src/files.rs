@@ -1,11 +1,10 @@
 //! Functions for creating directories and storing files
 
 use std::{
-    fs::{create_dir_all, File, remove_dir_all},
-    io::{BufReader, Read, Write, Error}, collections::hash_map::DefaultHasher, hash::Hasher,
+    fs::{create_dir_all, remove_dir_all, File},
+    io::{BufReader, Error, Read, Write},
 };
 
-use std::hash::Hash;
 
 /// Wrapper for configuration file.
 pub struct Config {
@@ -86,13 +85,19 @@ fn create_config() -> File {
 }
 /// Saves calendar to the local cache directory. The url of the
 /// calendar is used to derive the file name.  
-pub fn store_calendar(content: String, url: String) -> Result<(), Error> {
+pub fn store_calendar(content: String, url: &str) -> Result<(), Error> {
     let cd = cache_dir().unwrap();
     create_dir_all(&cd).expect("create .cache directory for sc");
     let path = format!("{}{}.ical", cd, fxhash::hash32(&url));
     let mut f = File::create(path)?;
     f.write_all(&content.as_bytes())?;
     Ok(())
+}
+/// Returns the local cache path of the calendar associated with the 
+/// given URL.
+pub fn cache_path(url: &str) -> String {
+    let cd = cache_dir().unwrap();
+    format!("{}{}.ical", cd, fxhash::hash32(url))
 }
 /// Removes entire local calendar cache directory.
 pub fn clean_cache() -> Result<(), Error> {

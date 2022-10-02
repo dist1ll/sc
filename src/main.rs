@@ -5,7 +5,7 @@ use clap::{Arg, ArgMatches, Command};
 pub mod files;
 
 pub mod model;
-use files::{init_config, Config, clean_cache};
+use files::{cache_path, clean_cache, init_config, Config};
 use model::Calendar;
 use render::{print_terminal, render_view_default};
 use spinners::{Spinner, Spinners};
@@ -45,7 +45,7 @@ fn main() -> Result<(), std::io::Error> {
 
     // check if config directory and file exists
     let result = match m.subcommand_name() {
-        None => cmd_view(m),
+        None => cmd_view(m, &mut cfg),
         Some("add") => cmd_add(m, &mut cfg),
         Some("remove") => cmd_remove(m, &mut cfg),
         Some("list") => cmd_list(&mut cfg),
@@ -75,7 +75,7 @@ fn cmd_update(cfg: &mut Config) -> Result<(), &'static str> {
             .unwrap();
         sp.stop();
         println!("...DONE");
-        store_calendar(body, url.clone()).map_err(|_| "couldn't write to calendar file")?;
+        store_calendar(body, url.as_str()).map_err(|_| "couldn't write to calendar file")?;
     }
     Ok(())
 }
@@ -135,19 +135,27 @@ fn cmd_add(m: ArgMatches, cfg: &mut Config) -> Result<(), &'static str> {
 fn cmd_clean() -> Result<(), &'static str> {
     match clean_cache() {
         Ok(_) => Ok(()),
-        Err(_) => Err("couldn't delete cache directory")
+        Err(_) => Err("couldn't delete cache directory"),
     }
 }
 
 /// Handles the view command.
-fn cmd_view(m: ArgMatches) -> Result<(), &'static str> {
+fn cmd_view(m: ArgMatches, cfg: &mut Config) -> Result<(), &'static str> {
+    if cfg.get_urls().len() == 0  {
+        return Err("no shared calendar added. Run `sc add <url>`.");
+    }
     // parse calendars
-    let cal_paths = vec!["./local/calendar.ics"];
-    let cals: Vec<Calendar> = cal_paths
+    let fetch: Result<Vec<Calendar>, std::io::Error> = cfg
+        .get_urls()
         .iter()
-        .map(|path| Calendar::from_path(path))
-        .collect::<Result<_, _>>()
-        .unwrap();
+        .map(|url| cache_path(&url))
+        .map(|path| Calendar::from_path(&path.as_str()))
+        .collect::<Result<_, _>>();
+
+    let cals = match fetch {
+        Ok(cals) => cals,
+        Err(_) => return Err("no calendar found. Run `sc update`."),
+    };
     //  display today view
     if m.get_flag("today") {
         println!("TODO: Display detailed today-view. ");
