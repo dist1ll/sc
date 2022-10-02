@@ -166,7 +166,7 @@ fn cmd_view(m: ArgMatches, cfg: &mut Config) -> Result<(), &'static str> {
             None => 0usize,
             Some(x) => x.parse().expect("<days> should be an integer."),
         };
-        let mut term = render_view_default(&cals[0], count);
+        let mut term = render_view_default(&cals, count);
         print_terminal(&mut term);
     }
     Ok(())

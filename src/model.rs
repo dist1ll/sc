@@ -106,3 +106,29 @@ impl Calendar {
         max
     }
 }
+
+/// Determines the maximum height of this element.
+pub trait MaxHeight {
+    /// Get the max height, starting from a given date, up til
+    /// a given number of days.    
+    fn max_height(&self, from: usize, number: usize) -> u16;
+}
+
+impl MaxHeight for Vec<Calendar> {
+    fn max_height(&self, from: usize, number: usize) -> u16 {
+        assert!(number > 0);
+        let mut max = 0u16;
+        for i in 0..number {
+            let date = (from + i).to_string();
+            let day_max = self
+                .iter()
+                .map(|c| match c.days.get(&date) {
+                    None => 0u16,
+                    Some(day) => day.events.len() as u16,
+                })
+                .sum();
+            max = max.max(day_max);
+        }
+        max
+    }
+}

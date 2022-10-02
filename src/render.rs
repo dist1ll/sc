@@ -24,8 +24,8 @@ fn max_default_blocks() -> u16 {
 /// `days` is the number of days that should be rendered. If `days`
 /// is zero, the day count will be determined automatically from the
 /// size of the terminal.
-pub fn render_view_default(cal: &Calendar, days: usize) -> Terminal<impl Backend> {
-    let mut term = build_default_terminal(&cal);
+pub fn render_view_default(cal: &Vec<Calendar>, days: usize) -> Terminal<impl Backend> {
+    let mut term = build_default_terminal(cal);
     let mut f = term.get_frame();
     let max = if days == 0 {
         max_default_blocks() as usize
@@ -41,7 +41,7 @@ pub fn render_view_default(cal: &Calendar, days: usize) -> Terminal<impl Backend
     let start_date = today();
     for i in 0..max {
         let date = (start_date + i).to_string();
-        match cal.days.get(&date) {
+        match cal[0].days.get(&date) {
             None => {
                 let mut day = Day::default();
                 day.date = date;
@@ -54,7 +54,7 @@ pub fn render_view_default(cal: &Calendar, days: usize) -> Terminal<impl Backend
 }
 
 /// Builds terminal for default view from a given calendar.
-fn build_default_terminal(cal: &Calendar) -> Terminal<impl Backend> {
+fn build_default_terminal(cal: &Vec<Calendar>) -> Terminal<impl Backend> {
     let stdout = std::io::stdout();
     let backend = CrosstermBackend::new(stdout);
     let ts = crossterm::terminal::size().unwrap();
